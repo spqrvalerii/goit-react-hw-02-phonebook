@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { ContactForm } from './ContactForm/ContactForm';
 import { Filter } from './Filter/Filter';
 import { ContactList } from './ContactList/ContactList';
+import { Notification } from './Notification/Notification';
 
 export class App extends Component {
   state = {
@@ -22,39 +23,40 @@ export class App extends Component {
     this.setState({ [name]: value });
   };
 
-  handleSubmit = e => {
-    const id = nanoid();
-    const name = e.name;
-    const number = e.number;
-    const contactsLists = [...this.state.contacts];
+  handleSubmit = (newContact) => {
+    const { contacts } = this.state;
+    
+    const isOnContacts = contacts.some(
+      (contact) => newContact.name.toLowerCase() === contact.name.toLowerCase()
+    );
 
-    if (contactsLists.findIndex(contact => name === contact.name) !== -1) {
-      alert(`${name} is already in contacts.`);
-    } else {
-      contactsLists.push({ name, id, number });
+    if (isOnContacts) {
+      alert(`${newContact.name} is already in contacts.`);
+      return;
     }
 
-    this.setState({ contacts: contactsLists });
+    const id = nanoid();
+    this.setState((prevState) => ({
+      contacts: [...prevState.contacts, {...newContact, id}]
+    }))
   };
 
-  handleDelete = e => {
+  handleDelete = (id) => {
     this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== e),
+      contacts: prevState.contacts.filter(contact => contact.id !== id),
     }));
   };
 
   getFilteredContacts = () => {
-    const filterContactsList = this.state.contacts.filter(contact => {
+    return (this.state.contacts.filter(contact => {
       return contact.name
         .toLowerCase()
         .includes(this.state.filter.toLowerCase());
-    });
-
-    return filterContactsList;
+    }));
   };
 
   render() {
-    const { filter } = this.state;
+    const { filter, contacts } = this.state;
 
     return (
       <div
@@ -70,12 +72,15 @@ export class App extends Component {
       >
         <h1>Phonebook</h1>
         <ContactForm handleSubmit={this.handleSubmit} />
-        <h2> Contacts</h2>
-        <Filter filter={filter} handleChange={this.handleChange} />
-        <ContactList
-          contacts={this.getFilteredContacts()}
-          handleDelete={this.handleDelete}
-        />
+        <h2> Contacts</h2>        
+        {contacts.length > 0 ? (
+          <>
+            <Filter filter={filter} handleChange={this.handleChange} />
+            <ContactList contacts={this.getFilteredContacts()} handleDelete={this.handleDelete} />
+          </>
+        ) : (
+          <Notification message="Your phonebook is empty."></Notification>
+          )}         
       </div>
     );
   }
